@@ -4,6 +4,7 @@ sync_tokens = {";", "fimse", "fim", "$"}
 
 Production = namedtuple("Production", ["left", "right"])
 
+#Gramatica númerada
 mgolgrammar = {
     "0": Production(left="P'", right=("P",)),
     "1": Production(left="P", right=("inicio", "V", "A",)),

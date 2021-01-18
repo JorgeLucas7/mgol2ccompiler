@@ -28,6 +28,7 @@ def t2():
     dfa = load_dfa(transitions_file="tables/tab_transitions.csv", accept_states_file="tables/tab_final_states.csv")
     lexical = Lexical(dfa=dfa, chain=mgol_code, symbols_table_file='tables/tab_symbols.csv')
 
+    #Passa o lexico como parametro
     syntactic = SLR(scanner=lexical)
 
     syntactic.run_slr()
@@ -38,6 +39,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     mgol_code = read_mgol_code(args.source)
+    #Declara o $ pois ele faz parte da linguagem
     mgol_code += "$"
     
     t2()

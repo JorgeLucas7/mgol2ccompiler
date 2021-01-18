@@ -13,6 +13,8 @@ class SLR:
         self.load_actions(file_path='tables/tab_action.csv')
         self.goto = {}
         self.load_goto(file_path='tables/tab_goto.csv')
+        # Faz parte da mesma tabela do Action dentro do programa, por isso n foi declarado
+        # Arquivos separados pois facilita a manutencao
         self.load_errors(file_path='tables/tab_errors_final.csv')
 
     def load_actions(self, file_path):
@@ -37,12 +39,19 @@ class SLR:
         for analisator, terminal, code, message in errors:
             self.action[analisator, terminal] = code  # recupera o erro
             self.action[analisator, code] = message  # recupera o erro
-            
+    
+    # Está com um erro pois ele para no primeiro token de sincronismo.
+    # Mas o certo seria ele ir até o token de sincronismo final do escopo 
+    #(deve existir um token de sincronismo pra cada escopo).
     def panic_error(self,error_code, current_symbol, current_state, line, column):
+        #Se o simbolo atual for um token de sincronizacao
         if current_symbol in sync_tokens:
             pass
         else:
             while True:
+                #A gente criou um dicionario pra receber a linha e coluna junto com o dicionario anterior
+                #Pq no t1 antes ele não retornava linha e coluna.
+                #Estrutura anterior já estava pronta ent n queriamos mexer
                 symbol = next(self.scanner.get_lexeme())['symbol'].lexeme
                 if symbol in sync_tokens:
                     break
@@ -61,6 +70,7 @@ class SLR:
             #     a = ip.lexeme
             try:
                 a = ip['symbol'].token if (s, ip['symbol'].token) in self.action else ip['symbol'].lexeme
+            #Se não tiver mais simbolo ele vai pro exeption;
             except TypeError:
                 print(ip)
                 try:
@@ -77,18 +87,27 @@ class SLR:
                 except:
                     break
             elif self.action[s, a] == "reduce":
+                #Recebe o número da regra de producao em mgolgrammar.py
                 prod_index = self.action[s, a, "reduce"]
+                #Recebe a regra de producao a esquerda em mgolgrammar.py
                 A = mgolgrammar[prod_index].left
+                #Recebe a regra de producao a direita em mgolgrammar.py
                 β = mgolgrammar[prod_index].right
                 for i in range(0, 2*len(β)):  # desempilhar 2*|β | símbolos para fora da pilha;
                     self.stack.pop()
                 ss = self.stack[-1]  # seja s' (ss) o estado agora ao topo da pilha;
                 # ss = s  # seja s' (ss) o estado agora ao topo da pilha;
-                self.stack.append(A)  # empilhar A e em seguida desvio[s',A];
+                self.stack.append(A)  # empilhar A e em seguida desvio[s',A]; que é o goto
                 self.stack.append(self.goto[ss, A])
-                print('{} -> {}'.format(A,' '.join(β)))  # escrever a produção A -> β na tela;
+                
+                #Lado esquerdo iniciou a producao e o direito eh quando fecha, ele exibe quando fecha
+                print('{} -> {}'.format(A,' '.join(β)))  # escrever a produção A -> β na tela; (só pra saber se tá tudo bem)
+            
             elif self.action[s, a] == "acc":
+                #Return True é para para o processamento, pois é um estado de aceitação.
                 return True
+
+            #Se ele não for nenhuma das opcoes acima ele entra no tratamento panic error;
             elif str(self.action[s, a]).isdigit():
                 error = self.panic_error(error_code=self.action[s, a], 
                                         current_symbol=a, 
@@ -97,6 +116,7 @@ class SLR:
                                         column=ip['position']['column'])
                 print(error)
                 try:
+                    #Ele para no token de sincronismo, e busca o proximo simbolo
                     ip = next(self.scanner.get_lexeme())  # avançar ip para o próximo símbolo da entrada;
                 except:
                     break
